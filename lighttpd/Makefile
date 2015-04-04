@@ -7,11 +7,11 @@
 
 include $(TOPDIR)/rules.mk
 
-PKG_NAME:=lighttpd-nonssl
+PKG_NAME:=lighttpd
 PKG_VERSION:=1.4.35
 PKG_RELEASE:=4
 
-PKG_SOURCE:=lighttpd-$(PKG_VERSION).tar.xz
+PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.xz
 PKG_SOURCE_URL:=http://download.lighttpd.net/lighttpd/releases-1.4.x
 PKG_MD5SUM:=c7ae774eab4cb7ac85e41b712f4ee9ba
 
@@ -23,20 +23,21 @@ PKG_INSTALL:=1
 
 include $(INCLUDE_DIR)/package.mk
 
-define Package/lighttpd-nonssl/Default
+define Package/lighttpd/Default
   SUBMENU:=Web Servers/Proxies
   SECTION:=net
   CATEGORY:=Network
   URL:=http://www.lighttpd.net/
-  MAINTAINER:=yanosz <yanosz@gmx.net>
+  MAINTAINER:=W. Michael Petullo <mike@flyn.org>
 endef
 
-define Package/lighttpd-nonssl
+define Package/lighttpd
   $(call Package/lighttpd/Default)
   MENU:=1
-  DEPENDS:=+libpcre +libpthread
-  TITLE:=A flexible and lightweight web server - Non-SSL, Stripped down variant. 
+  DEPENDS:=+LIGHTTPD_SSL:libopenssl +libpcre +libpthread
+  TITLE:=A flexible and lightweight web server
 endef
+
 
 CONFIGURE_ARGS+= \
 	--libdir=/usr/lib/lighttpd \
@@ -61,6 +62,7 @@ CONFIGURE_ARGS+= \
 
 CONFIGURE_VARS+= \
 	PCRE_LIB="-lpcre" \
+
 
 
 define Build/Configure
@@ -90,16 +92,16 @@ define Package/lighttpd/install
 endef
 
 define BuildPlugin
-  define Package/lighttpd-mod-$(1)-nonssl
-    $(call Package/lighttpd-nonssl/Default)
-    DEPENDS:=lighttpd-nonssl
+  define Package/lighttpd-mod-$(1)
+    $(call Package/lighttpd/Default)
+    DEPENDS:=lighttpd
     ifneq ($(3),)
       DEPENDS+= $(3)
     endif
     TITLE:=$(2) module
   endef
 
-  define Package/lighttpd-mod-$(1)-nonssl/install
+  define Package/lighttpd-mod-$(1)/install
 	$(INSTALL_DIR) $$(1)/usr/lib/lighttpd
 	$(CP) $(PKG_INSTALL_DIR)/usr/lib/lighttpd/mod_$(1).so $$(1)/usr/lib/lighttpd
 	$(INSTALL_DIR) $$(1)/etc/lighttpd/conf.d
@@ -110,15 +112,23 @@ define BuildPlugin
 	fi
   endef
 
-  $$(eval $$(call BuildPackage,lighttpd-mod-$(1)-nonssl))
+  $$(eval $$(call BuildPackage,lighttpd-mod-$(1)))
 endef
 
 $(eval $(call BuildPackage,lighttpd))
 
+# First, permit redirect from HTTP to HTTPS.
+$(eval $(call BuildPlugin,redirect,URL redirection,+PACKAGE_lighttpd-mod-redirect:libpcre,10))
+
+# Next, permit authentication.
+$(eval $(call BuildPlugin,auth,Authentication,,20))
+
 # Finally, everything else.
+$(eval $(call BuildPlugin,alias,Directory alias,,30))
 $(eval $(call BuildPlugin,cgi,CGI,,30))
 $(eval $(call BuildPlugin,fastcgi,FastCGI,,30))
 $(eval $(call BuildPlugin,proxy,Proxy,,30))
 $(eval $(call BuildPlugin,rewrite,URL rewriting,+PACKAGE_lighttpd-mod-rewrite:libpcre,30))
+$(eval $(call BuildPlugin,setenv,Environment variable setting,,30))
 $(eval $(call BuildPlugin,simple_vhost,Simple virtual hosting,,30))
 

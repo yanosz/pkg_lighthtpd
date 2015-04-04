@@ -28,7 +28,7 @@ define Package/lighttpd/Default
   SECTION:=net
   CATEGORY:=Network
   URL:=http://www.lighttpd.net/
-  MAINTAINER:=W. Michael Petullo <mike@flyn.org>
+  MAINTAINER:=yanosz (yanosz@gmx.net)
 endef
 
 define Package/lighttpd

@@ -1,4 +1,4 @@
-# pkg_lighthtpd
+# pkg_lighttpd
 Stripped Down Version of Lighttpd
 
 To be used in ff-kbu
